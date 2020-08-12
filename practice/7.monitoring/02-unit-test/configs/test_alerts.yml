@@ -1,0 +1,25 @@
+---
+rule_files:
+  - alerts.yml
+evaluation_interval: 1m
+tests:
+ - interval: 1m
+   input_series:
+    - series: 'up{job="node",instance="slurm1"}'
+      values: '1+0x10'
+    - series: 'up{job="node",instance="slurm2"}'
+      values: '1+0x5 0+0x5'
+    - series: 'up{job="prometheus",instance="slurm1"}'
+      values: '1+0x10'
+   alert_rule_test:
+    - alertname: exporter_down
+      eval_time: 7m
+    - alertname: exporter_down
+      eval_time: 8m
+      exp_alerts:
+       - exp_labels:
+           severity: warning
+           job: node
+         exp_annotations:
+           description: 'Only 0.5 of node job is up'
+...

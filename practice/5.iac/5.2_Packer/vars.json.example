@@ -1,0 +1,13 @@
+{
+  "domain_name": "ДОМЕН",
+  "tenant_id": "ПРОЕКТ_ID",
+  "username": "ИМЯ_ПОЛЬЗОВАТЕЛЯ",
+  "password": "Пароль",
+  "networks": "ID_СЕТИ",
+  "region": "РЕГИОН",
+  "availability_zone": "АЗ",
+  "volume_type": "fast.АЗ"
+}
+
+
+

@@ -1,0 +1,24 @@
+---
+groups:
+ - name: slurm_demo_alert
+   rules:
+    - alert: exporter_down
+      expr: avg without(instance)(up) < 0.75
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        description: 'Only {{$value}} of {{$labels.job}} job is up'
+ - name: "node-exporter"
+   rules:
+    - alert: "NodeCpuLoadAverageHigh"
+      expr: |
+        node_load1 > instance:node_num_cpu:sum
+      for: 1m
+      labels:
+        severity: "warning"
+      annotations:
+       description: "Load average at {{ $labels.instance }} is to hight. LA1:{{ printf \"%.0f\" $value }}"
+       summary: "Load Average on server is to high from 1 minute"
+
+...

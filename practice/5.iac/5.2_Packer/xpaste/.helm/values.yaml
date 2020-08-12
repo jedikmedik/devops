@@ -1,0 +1,49 @@
+# This is a YAML-formatted file.
+
+image: registry.southbridge.ru/web/x
+imageTag: master.45932
+imagePullSecret: web-x-gitlab-registry
+
+env:
+  RAILS_ENV: production
+  RAILS_LOG_TO_STDOUT: 1
+  DB_HOST: postgres-postgresql
+  DB_PORT: 5432
+  DB_NAME: x
+
+# This variables is taken from secret
+# Value is secret name where variable value can be found
+# Key in secret equals lowercased variable name with "_" replaced by "-"
+# The secret should be created manually
+envSecret:
+  SECRET_KEY_BASE: web-x
+  DB_USER: web-x
+  DB_PASSWORD: web-x
+
+# Resources for app. Limits is the maximum number of resources that app cas use.
+# And requests is resources that will be granted to the app at start time.
+replicas: 2
+
+app:
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+cron:
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+service:
+  port: 80
+
+ingress:
+  host: xpaste.s00.slurm.io

@@ -1,0 +1,76 @@
+---
+stages:
+  - setup
+  - build
+  - test
+  - copy
+  - deploy
+
+variables:
+  ANSIBLE_VERSION: 2.7.12
+  ANSIBLE_FORCE_COLOR: "true"
+  ANSIBLE_CONFIG: /home/gitlab-runner/iac-ansible/ansible.cfg
+
+before_script:
+  - grep -Fq gitlab.slurm.io ~/.ssh/known_hosts || ssh-keyscan -t ed25519 gitlab.slurm.io >> ~/.ssh/known_hosts
+  - ( flock -w 20 10; cd ~/iac-ansible && git checkout master && git pull ) 10>/tmp/ci-10.lock
+  - source ~/ansible-${ANSIBLE_VERSION}/bin/activate
+  - export PLAY_DEPLOY="ansible-playbook /home/gitlab-runner/iac-ansible/deploy.yml --diff -e ansible_ssh_common_args="
+
+setup build environment:
+  script:
+    - $PLAY_DEPLOY --tags=setup
+  stage: setup
+  tags:
+    - ansible
+
+build app:
+  script:
+    - $PLAY_DEPLOY --tags=build -e ci_project_dir=$CI_PROJECT_DIR
+  artifacts:
+#     untracked: true
+    paths:
+      - .bundle/config
+      - node_modules/.yarn-integrity
+      - public/assets
+      - vendor/bundle
+      - yarn.lock
+    expire_in: 2h
+  stage: build
+  tags:
+    - ansible
+
+test app:
+  script:
+    - $PLAY_DEPLOY --tags=test -e ci_project_dir=$CI_PROJECT_DIR
+  stage: test
+  tags:
+    - ansible
+
+.copy:
+  before_script: []
+  script:
+    - sh -c true
+  stage: copy
+  variables:
+    GIT_CLONE_PATH: /home/gitlab-runner/builds/$CI_PROJECT_PATH
+
+copy to app1:
+  extends: .copy
+  tags:
+    - app1
+
+copy to app2:
+  extends: .copy
+  tags:
+    - app2
+
+rolling update:
+  dependencies: []
+  script:
+    - $PLAY_DEPLOY --tags=deploy -e ci_project_dir=$HOME/builds/$CI_PROJECT_PATH
+  stage: deploy
+  tags:
+    - ansible
+
+...

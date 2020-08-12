@@ -1,0 +1,133 @@
+{
+  "variables": {
+    "region": null,
+    "tenant_id": null,
+    "domain_name": null,
+    "username": null,
+    "password": null,
+    "networks": null,
+    "availability_zone": null,
+    "volume_type": null,
+    "volume_size": "5",
+    "db_username": "xpaste",
+    "db_password": "frank9Above9Crux"
+  },
+  "sensitive-variables": [
+    "password"
+  ],
+  "builders": [
+    {
+      "name": "app",
+      "type": "openstack",
+      "identity_endpoint": "https://api.selvpc.ru/identity/v3",
+      "region": "{{user `region`}}",
+      "tenant_id": "{{user `tenant_id`}}",
+      "domain_name": "{{user `domain_name`}}",
+      "username": "{{user `username`}}",
+      "password": "{{user `password`}}",
+      "networks": "{{user `networks`}}",
+      "availability_zone": "{{user `availability_zone`}}",
+      "volume_type": "{{user `volume_type`}}",
+      "volume_size": "{{user `volume_size`}}",
+      "floating_ip_network": "external-network",
+
+      "flavor": "SL1.2-4096",
+      "ssh_username": "root",
+      "image_name": "centos-app-packer-{{timestamp}}",
+      "source_image_name": "CentOS 7 64-bit",
+      "use_floating_ip": true,
+      "use_blockstorage_volume": true,
+      "image_visibility": "private",
+      "image_tags": [
+        "app"
+      ]
+    },
+    {
+      "name": "db",
+      "type": "openstack",
+      "identity_endpoint": "https://api.selvpc.ru/identity/v3",
+      "region": "{{user `region`}}",
+      "tenant_id": "{{user `tenant_id`}}",
+      "domain_name": "{{user `domain_name`}}",
+      "username": "{{user `username`}}",
+      "password": "{{user `password`}}",
+      "networks": "{{user `networks`}}",
+      "availability_zone": "{{user `availability_zone`}}",
+      "volume_type": "{{user `volume_type`}}",
+      "volume_size": "{{user `volume_size`}}",
+      "floating_ip_network": "external-network",
+
+      "flavor": "SL1.2-4096",
+      "ssh_username": "root",
+      "image_name": "db-packer-{{timestamp}}",
+      "source_image_name": "Ubuntu 18.04 LTS 64-bit",
+      "use_floating_ip": true,
+      "use_blockstorage_volume": true,
+      "image_visibility": "private",
+      "image_tags": [
+        "db"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "xpaste",
+      "destination": "/root/xpaste",
+      "only": [
+        "app"
+      ]
+    },
+    {
+      "type": "shell",
+      "script": "files/1_configure_centos7.sh",
+      "only": [
+        "app"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "files/2_wait_pg_server_and_migrate.sh",
+      "destination": "/home/username/2_wait_pg_server_and_migrate.sh",
+      "only": [
+        "app"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "files/3_install_app.sh",
+      "destination": "/home/username/xpaste/3_install_app.sh",
+      "only": [
+        "app"
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "chmod +x /home/username/2_wait_pg_server_and_migrate.sh",
+        "chmod +x /home/username/xpaste/3_install_app.sh",
+        "sudo -S -u username bash -c 'cd /home/username/xpaste/ && /home/username/xpaste/3_install_app.sh'"
+      ],
+      "only": [
+        "app"
+      ]
+    },
+    {
+      "type": "shell",
+      "script": "files/4_install_pg.sh",
+      "only": [
+        "db"
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "docker volume create pg",
+        "docker run -d --restart=always --name=postgres -e POSTGRES_PASSWORD={{user `db_password`}} -e POSTGRES_USER={{user `db_username`}} -v pg:/var/lib/postgresql/data -p 5432:5432 postgres"
+      ],
+      "only": [
+        "db"
+      ]
+    }
+  ]
+}

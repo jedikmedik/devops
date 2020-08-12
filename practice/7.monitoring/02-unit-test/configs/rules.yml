@@ -1,0 +1,17 @@
+---
+groups:
+ - name: slurm_io_demo
+   rules:
+    - record: job:up:sum
+      expr: sum without(instance)(up)
+ 
+ - name: "node-exporter.rules"
+   rules:
+     - record: "instance:node_num_cpu:sum"
+       expr: |
+          count without (cpu) (
+          count without (mode) (
+          node_cpu_seconds_total{job="node_exporter_sd"}
+            )
+          )
+...

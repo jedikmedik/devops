@@ -1,0 +1,54 @@
+---
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+  - "rules.yml"
+
+alerting:
+  alertmanagers:
+   - static_configs:
+      - targets: ['localhost:9093']
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  
+  - job_name: 'node_exporter_sd'
+    metrics_path: /metrics
+    openstack_sd_configs:
+      - identity_endpoint: https://api.selvpc.ru/identity/v3
+        port: 9100
+        domain_name: '82113'
+        username: '<user name>' # s000XXX
+        project_name: '<Project name>' # project-s000XXX
+        password: '<Password>'
+        role: 'instance'
+        region: '<Region>' # ru-X
+
+  - job_name: 'gitlab_runner_sd'
+    metrics_path: /metrics
+    openstack_sd_configs:
+      - identity_endpoint: https://api.selvpc.ru/identity/v3
+        port: 9252
+        domain_name: '82113'
+        username: '<user name>' # s000XXX
+        project_name: '<Project name>' # project-s000XXX
+        password: '<Password>'
+        role: 'instance'
+        region: '<Region>' # ru-X
+      
+    relabel_configs:
+      - source_labels: [__meta_openstack_instance_name]
+        regex: bastion
+        action: keep
+
+  - job_name: 'envoy'
+    metrics_path: /stats/prometheus
+    static_configs:
+      - targets:
+        - 127.0.0.1:9901     # envoy
+...
